@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026학년도 2학기 수업 진도표</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter & Noto Sans KR -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between antialiased selection:bg-emerald-100 selection:text-emerald-800">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Password Auth Overlay (Default view on initial load / reload) -->
+    <div id="auth-screen" class="fixed inset-0 z-40 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-8 transform transition-all">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 mb-4 shadow-inner">
+                    <i class="fa-solid fa-lock text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-800">수업 진도표 로그인</h1>
+                <p class="text-sm text-slate-500 mt-1">교사 전용 개인 시스템입니다. 비밀번호를 입력해주세요.</p>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label for="password-input" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">접속 비밀번호</label>
+                    <div class="relative">
+                        <input type="password" id="password-input" placeholder="비밀번호 입력 (초기: 7777)" required
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition text-center tracking-widest text-lg font-bold">
+                        <button type="button" onclick="togglePasswordVisibility('password-input', 'toggle-icon-1')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+                            <i id="toggle-icon-1" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2 text-center">* 초기 비밀번호는 <span class="font-semibold text-emerald-600">7777</span> 입니다.</p>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/30 transition duration-150 active:scale-[0.98] flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> 진도표 입장하기
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Initial Class Setup Modal -->
+    <div id="class-setup-modal" class="fixed inset-0 z-30 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                        <i class="fa-solid fa-users text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">담당 학급 설정</h3>
+                        <p class="text-xs text-slate-500">담당하는 반 번호를 등록해 주세요.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeClassSetupModal()" id="close-class-modal-btn" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleSaveClasses(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">담당 반 목록 (쉼표로 구분)</label>
+                    <input type="text" id="classes-input" placeholder="예: 2, 3, 4, 7" required
+                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition text-base">
+                    <p class="text-xs text-slate-500 mt-1.5">
+                        <i class="fa-solid fa-circle-info text-emerald-600 mr-1"></i> 숫자를 쉼표(,)로 구분하여 입력하세요. (예: <span class="font-mono bg-slate-100 px-1 py-0.5 rounded">1, 2, 5, 8</span>)
+                    </p>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">현재 선택 미리보기</span>
+                    <div id="class-badges-preview" class="flex flex-wrap gap-1.5 min-h-[32px] items-center">
+                        <span class="text-xs text-slate-400 italic">반 번호를 입력하면 여기에 표시됩니다.</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeClassSetupModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium transition">취소</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-md transition">저장하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Password Settings Modal -->
+    <div id="password-modal" class="fixed inset-0 z-30 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-amber-100 text-amber-600 rounded-lg">
+                        <i class="fa-solid fa-key text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">비밀번호 변경</h3>
+                        <p class="text-xs text-slate-500">새로운 접속 비밀번호를 설정합니다.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closePasswordModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleChangePassword(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">현재 비밀번호</label>
+                    <input type="password" id="current-pass-input" required
+                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">새 비밀번호</label>
+                    <input type="password" id="new-pass-input" minlength="4" required placeholder="4자리 이상 입력"
+                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">새 비밀번호 확인</label>
+                    <input type="password" id="confirm-pass-input" minlength="4" required
+                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closePasswordModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium transition">취소</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-md transition">비밀번호 변경</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lesson Entry Modal -->
+    <div id="lesson-modal" class="fixed inset-0 z-30 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                        <i class="fa-solid fa-pen-to-square text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 id="lesson-modal-title" class="text-lg font-bold text-slate-800">새 차시 추가</h3>
+                        <p class="text-xs text-slate-500"><span id="lesson-modal-class-name" class="font-semibold text-emerald-600">--반</span> 수업 계획을 추가하거나 수정합니다.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeLessonModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleSaveLesson(event)" class="space-y-4">
+                <input type="hidden" id="lesson-edit-id">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">차시 번호</label>
+                        <input type="number" id="lesson-no-input" min="1" max="500" required placeholder="예: 1"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">예정 날짜</label>
+                        <input type="date" id="lesson-date-input"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">단원 / 수업 주제</label>
+                    <input type="text" id="lesson-topic-input" required placeholder="예: 1단원. 이차방정식의 풀이"
+                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">진도 상태</label>
+                        <select id="lesson-status-input" onchange="handleStatusChangeInModal(this.value)"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-medium">
+                            <option value="예정">예정 (회색)</option>
+                            <option value="진행중">진행중 (노랑)</option>
+                            <option value="완료">완료 (초록)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">실제 완료일</label>
+                        <input type="date" id="lesson-completed-date-input"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">수업 메모</label>
+                    <textarea id="lesson-memo-input" rows="2" placeholder="준비물, 형성평가 과제, 유의사항 등"
+                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeLessonModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium transition">취소</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-md transition">저장하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 z-30 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 border border-slate-100 text-center">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-trash-can text-xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">차시 삭제</h3>
+            <p class="text-xs text-slate-500 mb-6">해당 차시 항목을 정말 삭제하시겠습니까?<br>삭제된 데이터는 복구할 수 없습니다.</p>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeDeleteModal()" class="flex-1 py-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-semibold transition">취소</button>
+                <button type="button" onclick="confirmDeleteLesson()" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-md transition">삭제하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Header & Workspace -->
+    <div id="app-container" class="opacity-0 transition-opacity duration-300 flex-1 flex flex-col">
+        <!-- Top Navigation Bar -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <!-- App Title -->
+                    <div>
+                        <div class="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md w-fit mb-1 border border-emerald-200/60">
+                            <i class="fa-solid fa-graduation-cap"></i> 교사 전용 진도 관리
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                            2026학년도 2학기 수업 진도표
+                        </h1>
+                    </div>
+
+                    <!-- Top Action Buttons -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="exportDataJSON()" title="PC에 백업 파일 저장" class="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition">
+                            <i class="fa-solid fa-download text-blue-600"></i>
+                            <span class="hidden sm:inline">백업</span>
+                        </button>
+
+                        <label title="백업 파일 불러오기" class="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition cursor-pointer">
+                            <i class="fa-solid fa-upload text-emerald-600"></i>
+                            <span class="hidden sm:inline">복원</span>
+                            <input type="file" accept=".json" onchange="importDataJSON(event)" class="hidden">
+                        </label>
+
+                        <button onclick="openClassSetupModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition">
+                            <i class="fa-solid fa-sliders text-emerald-600"></i>
+                            <span>반 설정</span>
+                        </button>
+                        
+                        <button onclick="openPasswordModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition">
+                            <i class="fa-solid fa-gear text-slate-500"></i>
+                            <span>비밀번호 변경</span>
+                        </button>
+
+                        <button onclick="handleLogout()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-xl transition shadow-sm">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                            <span>로그아웃</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+            <!-- Class Switcher & Overview Bar -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <!-- Left: Class Select Dropdown -->
+                <div class="flex items-center gap-3">
+                    <label for="class-select" class="text-sm font-bold text-slate-700 whitespace-nowrap flex items-center gap-1.5">
+                        <i class="fa-solid fa-school text-emerald-600"></i> 반 선택:
+                    </label>
+                    <div class="relative min-w-[150px]">
+                        <select id="class-select" onchange="handleSelectClass(this.value)" class="w-full pl-4 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none cursor-pointer appearance-none">
+                            <!-- Populated dynamically -->
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- Center/Right: Progress Bar Display -->
+                <div class="flex-1 max-w-xl bg-slate-50 border border-slate-100 p-4 rounded-xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">학급 진도율</span>
+                            <span id="progress-text-detail" class="text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">0 / 0 차시 완료</span>
+                        </div>
+                        <span id="progress-percentage" class="text-base font-extrabold text-emerald-600">0%</span>
+                    </div>
+                    <!-- Visual Progress Track -->
+                    <div class="w-full bg-slate-200 rounded-full h-3.5 overflow-hidden flex">
+                        <div id="progress-bar-inner" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Header Controls & Filter Options -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button onclick="openAddLessonModal()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-md shadow-emerald-600/20 transition active:scale-[0.98]">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>차시 추가</span>
+                    </button>
+
+                    <button onclick="generateSampleDataForClass()" class="inline-flex items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium text-sm rounded-xl transition">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+                        <span>기본 샘플 차시 생성</span>
+                    </button>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-slate-500">필터:</span>
+                    <div class="inline-flex p-1 bg-slate-200/70 rounded-xl text-xs font-medium">
+                        <button onclick="filterByStatus('ALL')" id="filter-all" class="px-3 py-1.5 rounded-lg font-semibold bg-white text-slate-800 shadow-sm transition">전체</button>
+                        <button onclick="filterByStatus('예정')" id="filter-plan" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">예정</button>
+                        <button onclick="filterByStatus('진행중')" id="filter-progress" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">진행중</button>
+                        <button onclick="filterByStatus('완료')" id="filter-done" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">완료</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Curriculum Table -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[768px]">
+                        <thead>
+                            <tr class="bg-slate-50/90 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                                <th class="py-3.5 px-4 text-center w-16">차시</th>
+                                <th class="py-3.5 px-4 w-32">예정일</th>
+                                <th class="py-3.5 px-4">단원 / 주제</th>
+                                <th class="py-3.5 px-4 text-center w-36">진도 상태</th>
+                                <th class="py-3.5 px-4 w-32">완료일</th>
+                                <th class="py-3.5 px-4">메모</th>
+                                <th class="py-3.5 px-4 text-center w-24">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lesson-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden py-16 text-center px-4">
+                    <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fa-solid fa-list-check text-2xl"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-700">등록된 차시 데이터가 없습니다.</h3>
+                    <p class="text-xs text-slate-500 mt-1 mb-4">상단의 '차시 추가' 버튼 또는 '기본 샘플 차시 생성'을 클릭하여 진도표를 채워보세요.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+            <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+                2026학년도 2학기 수업 진도 관리 시스템 &bull; 개인 전용 데이터베이스 안전 보관 중
+            </div>
+        </footer>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Initialization
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'class-progress-2026';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "demo-api-key",
+            authDomain: "demo-app.firebaseapp.com",
+            projectId: "demo-app",
+            storageBucket: "demo-app.appspot.com",
+            messagingSenderId: "000000000000",
+            appId: "1:000000000000:web:000000000000"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Application Global State
+        window.appState = {
+            authenticated: false,
+            userId: null,
+            password: '7777', // Default password
+            classList: [],    // Array of class numbers e.g. ['2', '3', '4', '7']
+            selectedClass: '',
+            lessons: [],      // Array of lesson objects
+            currentFilter: 'ALL',
+            pendingDeleteId: null, // Track lesson to delete
+            unsubscribeListener: null
+        };
+
+        const LOCAL_STORAGE_KEY = 'class_progress_2026_data';
+
+        // Synchronously load LocalStorage on script startup
+        function loadLocalData() {
+            try {
+                const localRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (localRaw) {
+                    const parsed = JSON.parse(localRaw);
+                    if (parsed.password) window.appState.password = parsed.password;
+                    if (Array.isArray(parsed.classList)) window.appState.classList = parsed.classList;
+                    if (Array.isArray(parsed.lessons)) window.appState.lessons = parsed.lessons;
+                    
+                    if (window.appState.classList.length > 0 && !window.appState.selectedClass) {
+                        window.appState.selectedClass = window.appState.classList[0];
+                    }
+                }
+            } catch (e) {
+                console.warn("LocalStorage load error:", e);
+            }
+        }
+
+        // Run immediately when script loads so password and class data are ready at login
+        loadLocalData();
+
+        // Initialize Auth Session
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth Error:", err);
+                await signInAnonymously(auth);
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.appState.userId = user.uid;
+                subscribeToUserData();
+            }
+        });
+
+        initAuth();
+
+        // Realtime Firestore Listener for User Personal Data
+        function subscribeToUserData() {
+            if (!window.appState.userId) {
+                if (window.appState.authenticated) renderUI();
+                return;
+            }
+
+            // MANDATORY RULE 1 Path
+            const userDocRef = doc(db, 'artifacts', appId, 'users', window.appState.userId, 'data', 'progressApp');
+
+            if (window.appState.unsubscribeListener) {
+                window.appState.unsubscribeListener();
+            }
+
+            window.appState.unsubscribeListener = onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.password) window.appState.password = data.password;
+                    if (Array.isArray(data.classList)) window.appState.classList = data.classList;
+                    if (Array.isArray(data.lessons)) window.appState.lessons = data.lessons;
+
+                    if (window.appState.classList.length > 0 && (!window.appState.selectedClass || !window.appState.classList.includes(window.appState.selectedClass))) {
+                        window.appState.selectedClass = window.appState.classList[0];
+                    }
+
+                    // Keep local storage updated
+                    try {
+                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
+                            password: window.appState.password,
+                            classList: window.appState.classList,
+                            lessons: window.appState.lessons,
+                            updatedAt: new Date().toISOString()
+                        }));
+                    } catch(e) {}
+                } else {
+                    saveDataToFirestore({
+                        password: window.appState.password || '7777',
+                        classList: window.appState.classList || [],
+                        lessons: window.appState.lessons || []
+                    });
+                }
+
+                if (window.appState.authenticated) {
+                    renderUI();
+                }
+            }, (error) => {
+                console.warn("Firestore access warning (Operating in local mode):", error);
+                if (window.appState.authenticated) renderUI();
+            });
+        }
+
+        // Save current app data to Firestore & LocalStorage
+        async function saveDataToFirestore(customData = null) {
+            const payload = customData || {
+                password: window.appState.password,
+                classList: window.appState.classList,
+                lessons: window.appState.lessons,
+                updatedAt: new Date().toISOString()
+            };
+
+            // 1. Always save to LocalStorage (Guarantees local PC offline persistence)
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+            } catch (e) {
+                console.error("LocalStorage save error:", e);
+            }
+
+            // 2. Try saving to Firestore if Auth active
+            if (!window.appState.userId) return;
+
+            const userDocRef = doc(db, 'artifacts', appId, 'users', window.appState.userId, 'data', 'progressApp');
+            try {
+                await setDoc(userDocRef, payload, { merge: true });
+            } catch (e) {
+                console.warn("Cloud sync warning (Saved to local browser storage instead):", e);
+            }
+        }
+
+        // Export JSON Data for Manual Backup
+        window.exportDataJSON = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                password: window.appState.password,
+                classList: window.appState.classList,
+                lessons: window.appState.lessons,
+                exportedAt: new Date().toLocaleString()
+            }, null, 2));
+
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `수업진도표_백업_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            dlAnchorElem.remove();
+
+            showToast("백업 파일(.json)이 다운로드되었습니다.", "success");
+        };
+
+        // Import JSON Data for Restoration
+        window.importDataJSON = function(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.password) window.appState.password = imported.password;
+                    if (Array.isArray(imported.classList)) window.appState.classList = imported.classList;
+                    if (Array.isArray(imported.lessons)) window.appState.lessons = imported.lessons;
+
+                    if (window.appState.classList.length > 0) {
+                        window.appState.selectedClass = window.appState.classList[0];
+                    }
+
+                    saveDataToFirestore();
+                    renderUI();
+                    showToast("백업 데이터가 성공적으로 복원되었습니다!", "success");
+                } catch (err) {
+                    showToast("올바른 백업 파일(.json)이 아닙니다.", "error");
+                }
+            };
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
+            }
+        };
+
+        // Logout
+        window.handleLogout = function() {
+            window.appState.authenticated = false;
+            document.getElementById('password-input').value = '';
+            renderUI();
+            showToast("로그아웃 되었습니다.", "info");
+        };
+
+        // Handle Login Submission
+        window.handleLogin = function(e) {
+            if (e) e.preventDefault();
+            const inputPass = document.getElementById('password-input').value;
+            if (inputPass === window.appState.password) {
+                window.appState.authenticated = true;
+                showToast("반갑습니다! 진도표에 접속하였습니다.", "success");
+                renderUI();
+                if (window.appState.classList.length === 0) {
+                    openClassSetupModal(true);
+                }
+            } else {
+                showToast("비밀번호가 올바르지 않습니다.", "error");
+            }
+        };
+
+        // Main UI Render function
+        function renderUI() {
+            const authScreen = document.getElementById('auth-screen');
+            const appContainer = document.getElementById('app-container');
+
+            if (!window.appState.authenticated) {
+                if (authScreen) authScreen.classList.remove('hidden');
+                if (appContainer) appContainer.classList.add('opacity-0');
+                return;
+            }
+
+            if (authScreen) authScreen.classList.add('hidden');
+            if (appContainer) appContainer.classList.remove('opacity-0');
+
+            // Populate class selection dropdown
+            const classSelect = document.getElementById('class-select');
+            if (classSelect) {
+                if (window.appState.classList.length === 0) {
+                    classSelect.innerHTML = `<option value="">반 없음</option>`;
+                    window.appState.selectedClass = '';
+                } else {
+                    classSelect.innerHTML = window.appState.classList.map(c => 
+                        `<option value="${c}" ${String(c) === String(window.appState.selectedClass) ? 'selected' : ''}>${c}반</option>`
+                    ).join('');
+
+                    if (!window.appState.selectedClass || !window.appState.classList.includes(window.appState.selectedClass)) {
+                        window.appState.selectedClass = window.appState.classList[0];
+                    }
+                }
+            }
+
+            renderTableAndProgress();
+        }
+
+        // Render Table and Progress Bar
+        function renderTableAndProgress() {
+            const currentClass = window.appState.selectedClass;
+            const classLessons = window.appState.lessons.filter(l => String(l.classNum) === String(currentClass));
+            
+            // Sort by lesson number
+            classLessons.sort((a, b) => Number(a.lessonNo) - Number(b.lessonNo));
+
+            // Calculate progress
+            const totalCount = classLessons.length;
+            const completedCount = classLessons.filter(l => l.status === '완료').length;
+            const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+            const progressText = document.getElementById('progress-text-detail');
+            const progressPercent = document.getElementById('progress-percentage');
+            const progressBar = document.getElementById('progress-bar-inner');
+
+            if (progressText) progressText.textContent = `${completedCount} / ${totalCount} 차시 완료`;
+            if (progressPercent) progressPercent.textContent = `${percentage}%`;
+            if (progressBar) progressBar.style.width = `${percentage}%`;
+
+            // Filter status
+            let displayLessons = classLessons;
+            if (window.appState.currentFilter !== 'ALL') {
+                displayLessons = classLessons.filter(l => l.status === window.appState.currentFilter);
+            }
+
+            const tbody = document.getElementById('lesson-table-body');
+            const emptyState = document.getElementById('empty-state');
+
+            if (!tbody) return;
+
+            if (displayLessons.length === 0) {
+                tbody.innerHTML = '';
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('hidden');
+
+            tbody.innerHTML = displayLessons.map(lesson => {
+                let badgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
+                if (lesson.status === '완료') badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                if (lesson.status === '진행중') badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="py-3.5 px-4 text-center font-bold text-slate-800">${escapeHTML(String(lesson.lessonNo))}차시</td>
+                        <td class="py-3.5 px-4 text-slate-600 font-mono text-xs">${escapeHTML(lesson.targetDate || '-')}</td>
+                        <td class="py-3.5 px-4 font-semibold text-slate-900">${escapeHTML(lesson.topic)}</td>
+                        <td class="py-3.5 px-4 text-center">
+                            <select onchange="updateLessonStatus('${lesson.id}', this.value)" 
+                                class="px-2.5 py-1 text-xs font-bold rounded-lg border focus:outline-none cursor-pointer ${badgeClass}">
+                                <option value="예정" ${lesson.status === '예정' ? 'selected' : ''}>예정</option>
+                                <option value="진행중" ${lesson.status === '진행중' ? 'selected' : ''}>진행중</option>
+                                <option value="완료" ${lesson.status === '완료' ? 'selected' : ''}>완료</option>
+                            </select>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-600 font-mono text-xs">${lesson.status === '완료' ? (lesson.completedDate || '-') : '-'}</td>
+                        <td class="py-3.5 px-4 text-slate-500 text-xs">${escapeHTML(lesson.memo || '-')}</td>
+                        <td class="py-3.5 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="openEditLessonModal('${lesson.id}')" title="수정" class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteLesson('${lesson.id}')" title="삭제" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Select Class Handler
+        window.handleSelectClass = function(val) {
+            window.appState.selectedClass = val;
+            renderTableAndProgress();
+        };
+
+        // Filter Table Handler
+        window.filterByStatus = function(status) {
+            window.appState.currentFilter = status;
+            
+            // Toggle active styles on buttons
+            ['ALL', '예정', '진행중', '완료'].forEach(s => {
+                const btnId = s === 'ALL' ? 'filter-all' : (s === '예정' ? 'filter-plan' : (s === '진행중' ? 'filter-progress' : 'filter-done'));
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (s === status) {
+                        btn.className = "px-3 py-1.5 rounded-lg font-semibold bg-white text-slate-800 shadow-sm transition";
+                    } else {
+                        btn.className = "px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition";
+                    }
+                }
+            });
+
+            renderTableAndProgress();
+        };
+
+        // Update Status of a specific lesson directly in the table
+        window.updateLessonStatus = function(lessonId, newStatus) {
+            const lesson = window.appState.lessons.find(l => l.id === lessonId);
+            if (!lesson) return;
+
+            lesson.status = newStatus;
+            if (newStatus === '완료' && !lesson.completedDate) {
+                lesson.completedDate = new Date().toISOString().split('T')[0];
+            } else if (newStatus === '예정') {
+                lesson.completedDate = '';
+            }
+            saveDataToFirestore();
+            renderTableAndProgress();
+            showToast("진도 상태가 변경되었습니다.", "success");
+        };
+
+        // Delete Lesson Modal Handlers
+        window.deleteLesson = function(lessonId) {
+            window.appState.pendingDeleteId = lessonId;
+            const modal = document.getElementById('delete-modal');
+            if (modal) modal.classList.remove('hidden');
+        };
+
+        window.closeDeleteModal = function() {
+            window.appState.pendingDeleteId = null;
+            const modal = document.getElementById('delete-modal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.confirmDeleteLesson = function() {
+            const lessonId = window.appState.pendingDeleteId;
+            if (!lessonId) return;
+
+            window.appState.lessons = window.appState.lessons.filter(l => l.id !== lessonId);
+            saveDataToFirestore();
+            closeDeleteModal();
+            renderTableAndProgress();
+            showToast("차시 항목이 삭제되었습니다.", "info");
+        };
+
+        // Generate Sample Lessons for current class
+        window.generateSampleDataForClass = function() {
+            const currentClass = window.appState.selectedClass;
+            if (!currentClass) {
+                showToast("먼저 담당 반을 선택해주세요.", "error");
+                return;
+            }
+
+            const samples = [
+                { lessonNo: 1, topic: "O.T. 및 2학기 교과서 안내", status: "완료", targetDate: "2026-08-18", completedDate: "2026-08-18", memo: "준비물 안내" },
+                { lessonNo: 2, topic: "1단원. 다항식의 연산 개념 정리", status: "완료", targetDate: "2026-08-20", completedDate: "2026-08-20", memo: "활동지 1번 완료" },
+                { lessonNo: 3, topic: "1단원. 조립제법과 인수분해", status: "진행중", targetDate: "2026-08-25", completedDate: "", memo: "예제 3번 풀이" },
+                { lessonNo: 4, topic: "2단원. 방정식과 부등식 - 복소수", status: "예정", targetDate: "2026-08-27", completedDate: "", memo: "" },
+                { lessonNo: 5, topic: "2단원. 이차방정식의 판별식", status: "예정", targetDate: "2026-09-01", completedDate: "", memo: "수행평가 연계" }
+            ];
+
+            // Remove existing lessons for this class to prevent duplicate conflict or append
+            window.appState.lessons = window.appState.lessons.filter(l => String(l.classNum) !== String(currentClass));
+
+            samples.forEach(s => {
+                window.appState.lessons.push({
+                    id: 'lesson_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                    classNum: String(currentClass),
+                    ...s
+                });
+            });
+
+            saveDataToFirestore();
+            renderTableAndProgress();
+            showToast(`${currentClass}반에 기본 샘플 차시가 추가되었습니다.`, "success");
+        };
+
+        // Class Setup Modal Open/Close
+        window.openClassSetupModal = function(isInitial = false) {
+            const modal = document.getElementById('class-setup-modal');
+            const input = document.getElementById('classes-input');
+            const closeBtn = document.getElementById('close-class-modal-btn');
+
+            input.value = window.appState.classList.join(', ');
+            updateClassBadgesPreview(input.value);
+
+            if (isInitial && window.appState.classList.length === 0) {
+                closeBtn.classList.add('hidden');
+            } else {
+                closeBtn.classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+
+            input.oninput = (e) => updateClassBadgesPreview(e.target.value);
+        };
+
+        window.closeClassSetupModal = function() {
+            document.getElementById('class-setup-modal').classList.add('hidden');
+        };
+
+        function updateClassBadgesPreview(text) {
+            const container = document.getElementById('class-badges-preview');
+            const list = parseClassInput(text);
+
+            if (list.length === 0) {
+                container.innerHTML = `<span class="text-xs text-slate-400 italic">반 번호를 입력하면 여기에 표시됩니다.</span>`;
+                return;
+            }
+
+            container.innerHTML = list.map(c => `
+                <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg border border-emerald-200">
+                    <i class="fa-solid fa-chalkboard"></i> ${c}반
+                </span>
+            `).join('');
+        }
+
+        function parseClassInput(input) {
+            return input
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0 && !isNaN(s))
+                .map(s => String(Number(s))); // sanitize numbers
+        }
+
+        window.handleSaveClasses = function(e) {
+            e.preventDefault();
+            const inputVal = document.getElementById('classes-input').value;
+            const parsedList = parseClassInput(inputVal);
+
+            if (parsedList.length === 0) {
+                showToast("최소 하나 이상의 반 번호를 입력해주세요.", "error");
+                return;
+            }
+
+            // Remove duplicates
+            const uniqueList = Array.from(new Set(parsedList)).sort((a, b) => Number(a) - Number(b));
+
+            window.appState.classList = uniqueList;
+
+            if (!uniqueList.includes(window.appState.selectedClass)) {
+                window.appState.selectedClass = uniqueList[0];
+            }
+
+            saveDataToFirestore();
+            closeClassSetupModal();
+            renderUI();
+            showToast("반 목록이 업데이트되었습니다.", "success");
+        };
+
+        // Password Change Modal Handlers
+        window.openPasswordModal = function() {
+            document.getElementById('current-pass-input').value = '';
+            document.getElementById('new-pass-input').value = '';
+            document.getElementById('confirm-pass-input').value = '';
+            document.getElementById('password-modal').classList.remove('hidden');
+        };
+
+        window.closePasswordModal = function() {
+            document.getElementById('password-modal').classList.add('hidden');
+        };
+
+        window.handleChangePassword = function(e) {
+            e.preventDefault();
+            const curr = document.getElementById('current-pass-input').value;
+            const newP = document.getElementById('new-pass-input').value;
+            const confP = document.getElementById('confirm-pass-input').value;
+
+            if (curr !== window.appState.password) {
+                showToast("현재 비밀번호가 일치하지 않습니다.", "error");
+                return;
+            }
+
+            if (newP !== confP) {
+                showToast("새 비밀번호와 확인 입력이 일치하지 않습니다.", "error");
+                return;
+            }
+
+            window.appState.password = newP;
+            saveDataToFirestore();
+            closePasswordModal();
+            showToast("비밀번호가 변경되었습니다. 다음 접속 시 변경된 비밀번호를 사용하세요.", "success");
+        };
+
+        // Lesson Entry Modal Handlers
+        window.openAddLessonModal = function() {
+            if (!window.appState.selectedClass) {
+                showToast("먼저 담당 반을 선택하거나 설정해주세요.", "error");
+                return;
+            }
+
+            document.getElementById('lesson-modal-title').textContent = "새 차시 추가";
+            document.getElementById('lesson-modal-class-name').textContent = `${window.appState.selectedClass}반`;
+            document.getElementById('lesson-edit-id').value = '';
+
+            // Auto calculate next lesson number
+            const currentClassLessons = window.appState.lessons.filter(l => String(l.classNum) === String(window.appState.selectedClass));
+            const maxLessonNo = currentClassLessons.reduce((max, l) => Math.max(max, Number(l.lessonNo) || 0), 0);
+            
+            document.getElementById('lesson-no-input').value = maxLessonNo + 1;
+            document.getElementById('lesson-date-input').value = new Date().toISOString().split('T')[0];
+            document.getElementById('lesson-topic-input').value = '';
+            document.getElementById('lesson-status-input').value = '예정';
+            document.getElementById('lesson-completed-date-input').value = '';
+            document.getElementById('lesson-memo-input').value = '';
+
+            document.getElementById('lesson-modal').classList.remove('hidden');
+        };
+
+        window.openEditLessonModal = function(id) {
+            const lesson = window.appState.lessons.find(l => l.id === id);
+            if (!lesson) return;
+
+            document.getElementById('lesson-modal-title').textContent = "차시 정보 수정";
+            document.getElementById('lesson-modal-class-name').textContent = `${lesson.classNum}반`;
+            document.getElementById('lesson-edit-id').value = lesson.id;
+            document.getElementById('lesson-no-input').value = lesson.lessonNo;
+            document.getElementById('lesson-date-input').value = lesson.targetDate || '';
+            document.getElementById('lesson-topic-input').value = lesson.topic;
+            document.getElementById('lesson-status-input').value = lesson.status;
+            document.getElementById('lesson-completed-date-input').value = lesson.completedDate || '';
+            document.getElementById('lesson-memo-input').value = lesson.memo || '';
+
+            document.getElementById('lesson-modal').classList.remove('hidden');
+        };
+
+        window.closeLessonModal = function() {
+            document.getElementById('lesson-modal').classList.add('hidden');
+        };
+
+        window.handleStatusChangeInModal = function(val) {
+            const completedInput = document.getElementById('lesson-completed-date-input');
+            if (val === '완료' && !completedInput.value) {
+                completedInput.value = new Date().toISOString().split('T')[0];
+            } else if (val === '예정') {
+                completedInput.value = '';
+            }
+        };
+
+        window.handleSaveLesson = function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('lesson-edit-id').value;
+            const lessonNo = Number(document.getElementById('lesson-no-input').value);
+            const targetDate = document.getElementById('lesson-date-input').value;
+            const topic = document.getElementById('lesson-topic-input').value.trim();
+            const status = document.getElementById('lesson-status-input').value;
+            let completedDate = document.getElementById('lesson-completed-date-input').value;
+            const memo = document.getElementById('lesson-memo-input').value.trim();
+
+            if (status === '완료' && !completedDate) {
+                completedDate = new Date().toISOString().split('T')[0];
+            }
+
+            if (editId) {
+                // Update existing
+                const lesson = window.appState.lessons.find(l => l.id === editId);
+                if (lesson) {
+                    lesson.lessonNo = lessonNo;
+                    lesson.targetDate = targetDate;
+                    lesson.topic = topic;
+                    lesson.status = status;
+                    lesson.completedDate = completedDate;
+                    lesson.memo = memo;
+                }
+            } else {
+                // Add new
+                window.appState.lessons.push({
+                    id: 'lesson_' + Date.now(),
+                    classNum: String(window.appState.selectedClass),
+                    lessonNo,
+                    targetDate,
+                    topic,
+                    status,
+                    completedDate,
+                    memo
+                });
+            }
+
+            saveDataToFirestore();
+            closeLessonModal();
+            renderTableAndProgress();
+            showToast("차시 정보가 저장되었습니다.", "success");
+        };
+
+        // Utility: Password toggle visibility
+        window.togglePasswordVisibility = function(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        };
+
+        // Utility: Helper HTML escaping
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // Utility: Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let typeStyles = 'bg-slate-800 text-white';
+            let icon = 'fa-circle-info';
+
+            if (type === 'success') {
+                typeStyles = 'bg-emerald-600 text-white shadow-emerald-600/20';
+                icon = 'fa-circle-check';
+            } else if (type === 'error') {
+                typeStyles = 'bg-rose-600 text-white shadow-rose-600/20';
+                icon = 'fa-triangle-exclamation';
+            }
+
+            toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg font-medium text-xs sm:text-sm transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto ${typeStyles}`;
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHTML(message)}</span>`;
+
+            container.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Expose showToast globally
+        window.showToast = showToast;
+    </script>
+</body>
+</html>
